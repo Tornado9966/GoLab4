@@ -1,0 +1,6 @@
+smth wrong
+print hello
+print world
+cat 1 2
+cat one two
+cat 1 2 3

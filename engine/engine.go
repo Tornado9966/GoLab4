@@ -57,3 +57,32 @@ type EventLoop struct {
 	terminateReceived bool
 	stopSignal chan struct{}
 }
+
+func (el *EventLoop) Start() {
+	el.queue = new(messageQueue)
+	el.stopSignal = make(chan struct{})
+	go func() {
+		for (!el.terminateReceived) || (el.queue.size() != 0) {
+			cmd := el.queue.pull()
+			cmd.Execute(el)
+		}
+		el.stopSignal <- struct{}{}
+	}()
+}
+
+type CommandFunc func (handler Handler)
+
+func (c CommandFunc) Execute(handler Handler) {
+	c(handler)
+}
+
+func (el *EventLoop) AwaitFinish() {
+	el.Post(CommandFunc(func (h Handler) {
+		h.(*EventLoop).terminateReceived = true
+	}))
+	<- el.stopSignal
+}
+
+func (el * EventLoop) Post(cmd Command) {
+	el.queue.push(cmd)
+}
